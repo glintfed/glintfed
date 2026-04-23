@@ -1,0 +1,3 @@
+server:
+  api:
+    addr: ":8000"

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Laravel to Go"
+  short_description: "Laravel 專案遷移到 Go 的資料庫轉換指南"
+  default_prompt: "Use $laravel-to-go to plan the database migration from a Laravel app to a Go service."

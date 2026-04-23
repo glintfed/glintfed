@@ -2,68 +2,44 @@ package main
 
 import (
 	"context"
-	"errors"
-	"log"
-	"net/http"
+	"flag"
+	"log/slog"
 	"os"
-	"os/signal"
-	"strings"
-	"syscall"
 	"time"
 
-	"glintfed/internal/web"
+	"glintfed/internal/data"
+	"glintfed/internal/lib/liblogs"
 )
 
-const (
-	defaultAddr         = ":8080"
+// Name is the name of the application.
+var Name string
+
+// Version is the version of the application.
+var Version string
+
+var (
+	flagCfgPath         string
 	shutdownGracePeriod = 10 * time.Second
 )
 
-func main() {
-	logger := log.New(os.Stdout, "", log.LstdFlags)
-
-	server := &http.Server{
-		Addr:              listenAddr(),
-		Handler:           web.NewHandler(),
-		ReadHeaderTimeout: 5 * time.Second,
-	}
-
-	errCh := make(chan error, 1)
-
-	go func() {
-		logger.Printf("starting glintfed on %s", server.Addr)
-		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			errCh <- err
-		}
-		close(errCh)
-	}()
-
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
-	select {
-	case <-ctx.Done():
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), shutdownGracePeriod)
-		defer cancel()
-
-		if err := server.Shutdown(shutdownCtx); err != nil {
-			logger.Fatalf("shutdown server: %v", err)
-		}
-	case err := <-errCh:
-		if err != nil {
-			logger.Fatalf("serve http: %v", err)
-		}
-	}
+func init() {
+	flag.StringVar(&flagCfgPath, "config", "configs/", "config dir path")
 }
 
-func listenAddr() string {
-	if addr := os.Getenv("PORT"); addr != "" {
-		if strings.HasPrefix(addr, ":") {
-			return addr
-		}
+func main() {
+	flag.Parse()
 
-		return ":" + addr
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{Level: slog.LevelDebug})))
+
+	cfg, err := data.NewConfig(Name, Version, flagCfgPath)
+	if err != nil {
+		slog.Error("failed to load config", liblogs.ErrAttr(err))
+		os.Exit(1)
 	}
 
-	return defaultAddr
+	app := newApp(cfg)
+	if err := app.Run(context.Background()); err != nil {
+		slog.Error("failed to run application", liblogs.ErrAttr(err))
+		return
+	}
 }

@@ -1,0 +1,6 @@
+database:
+  sql:
+    driver: sqlite3
+    dsn: file:glintfed.db?mode=rwc&_fk=1
+  redis:
+    addr: localhost:6379
