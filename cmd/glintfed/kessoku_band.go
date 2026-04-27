@@ -6,11 +6,91 @@ import (
 	"github.com/mazrean/kessoku"
 	"glintfed/internal/data"
 	"glintfed/internal/server"
+	"glintfed/internal/server/handler"
+	"glintfed/internal/server/handler/admininvite"
+	"glintfed/internal/server/handler/api"
+	"glintfed/internal/server/handler/api/adminapi"
+	"glintfed/internal/server/handler/api/apiv1"
+	"glintfed/internal/server/handler/api/apiv1/admin/domainblocks"
+	"glintfed/internal/server/handler/api/apiv1/domainblock"
+	"glintfed/internal/server/handler/api/apiv1/tags"
+	"glintfed/internal/server/handler/api/apiv1dot1"
+	"glintfed/internal/server/handler/api/apiv2"
+	"glintfed/internal/server/handler/appregister"
+	"glintfed/internal/server/handler/collection"
+	"glintfed/internal/server/handler/compose"
+	"glintfed/internal/server/handler/customfilter"
+	"glintfed/internal/server/handler/directmessage"
+	"glintfed/internal/server/handler/discover"
+	"glintfed/internal/server/handler/federation"
+	"glintfed/internal/server/handler/group"
+	"glintfed/internal/server/handler/groups/admin"
+	api0 "glintfed/internal/server/handler/groups/api"
+	"glintfed/internal/server/handler/groups/comment"
+	"glintfed/internal/server/handler/groups/create"
+	discover0 "glintfed/internal/server/handler/groups/discover"
+	"glintfed/internal/server/handler/groups/feed"
+	"glintfed/internal/server/handler/groups/member"
+	"glintfed/internal/server/handler/groups/meta"
+	"glintfed/internal/server/handler/groups/notifications"
+	"glintfed/internal/server/handler/groups/post"
+	"glintfed/internal/server/handler/groups/search"
+	"glintfed/internal/server/handler/groups/topic"
+	"glintfed/internal/server/handler/healthcheck"
+	"glintfed/internal/server/handler/instanceactor"
+	"glintfed/internal/server/handler/landing"
+	"glintfed/internal/server/handler/media"
+	"glintfed/internal/server/handler/oauth"
+	"glintfed/internal/server/handler/pixelfeddirectory"
+	"glintfed/internal/server/handler/statusedit"
+	"glintfed/internal/server/handler/stories/storyapiv1"
+	"glintfed/internal/server/handler/story"
+	"glintfed/internal/server/handler/userappsettings"
 	"net/http"
 )
 
 func newApp(config *data.Config) *App {
-	server0 := kessoku.Provide(server.NewAPIServer).Fn()(config)
+	handler0 := kessoku.Bind[healthcheck.Handler](kessoku.Provide(healthcheck.New)).Fn()()
+	handler1 := kessoku.Bind[oauth.Handler](kessoku.Provide(oauth.New)).Fn()()
+	handler2 := kessoku.Bind[federation.Handler](kessoku.Provide(federation.New)).Fn()()
+	handler3 := kessoku.Bind[instanceactor.Handler](kessoku.Provide(instanceactor.New)).Fn()()
+	handler4 := kessoku.Bind[story.Handler](kessoku.Provide(story.New)).Fn()()
+	handler5 := kessoku.Bind[media.Handler](kessoku.Provide(media.New)).Fn()()
+	handler6 := kessoku.Bind[appregister.Handler](kessoku.Provide(appregister.New)).Fn()()
+	handler7 := kessoku.Bind[api.Handler](kessoku.Provide(api.New)).Fn()()
+	handler8 := kessoku.Bind[apiv1.Handler](kessoku.Provide(apiv1.New)).Fn()()
+	handler9 := kessoku.Bind[apiv1dot1.Handler](kessoku.Provide(apiv1dot1.New)).Fn()()
+	handler10 := kessoku.Bind[apiv2.Handler](kessoku.Provide(apiv2.New)).Fn()()
+	handler11 := kessoku.Bind[tags.Handler](kessoku.Provide(tags.New)).Fn()()
+	handler12 := kessoku.Bind[domainblock.Handler](kessoku.Provide(domainblock.New)).Fn()()
+	handler13 := kessoku.Bind[statusedit.Handler](kessoku.Provide(statusedit.New)).Fn()()
+	handler14 := kessoku.Bind[domainblocks.Handler](kessoku.Provide(domainblocks.New)).Fn()()
+	handler15 := kessoku.Bind[customfilter.Handler](kessoku.Provide(customfilter.New)).Fn()()
+	handler16 := kessoku.Bind[discover.Handler](kessoku.Provide(discover.New)).Fn()()
+	handler17 := kessoku.Bind[pixelfeddirectory.Handler](kessoku.Provide(pixelfeddirectory.New)).Fn()()
+	handler18 := kessoku.Bind[storyapiv1.Handler](kessoku.Provide(storyapiv1.New)).Fn()()
+	handler19 := kessoku.Bind[compose.Handler](kessoku.Provide(compose.New)).Fn()()
+	handler20 := kessoku.Bind[landing.Handler](kessoku.Provide(landing.New)).Fn()()
+	handler21 := kessoku.Bind[admininvite.Handler](kessoku.Provide(admininvite.New)).Fn()()
+	handler22 := kessoku.Bind[userappsettings.Handler](kessoku.Provide(userappsettings.New)).Fn()()
+	handler23 := kessoku.Bind[adminapi.Handler](kessoku.Provide(adminapi.New)).Fn()()
+	handler24 := kessoku.Bind[collection.Handler](kessoku.Provide(collection.New)).Fn()()
+	handler25 := kessoku.Bind[directmessage.Handler](kessoku.Provide(directmessage.New)).Fn()()
+	handler26 := kessoku.Bind[api0.Handler](kessoku.Provide(api0.New)).Fn()()
+	handler27 := kessoku.Bind[create.Handler](kessoku.Provide(create.New)).Fn()()
+	handler28 := kessoku.Bind[search.Handler](kessoku.Provide(search.New)).Fn()()
+	handler29 := kessoku.Bind[comment.Handler](kessoku.Provide(comment.New)).Fn()()
+	handler30 := kessoku.Bind[discover0.Handler](kessoku.Provide(discover0.New)).Fn()()
+	handler31 := kessoku.Bind[meta.Handler](kessoku.Provide(meta.New)).Fn()()
+	handler32 := kessoku.Bind[post.Handler](kessoku.Provide(post.New)).Fn()()
+	handler33 := kessoku.Bind[topic.Handler](kessoku.Provide(topic.New)).Fn()()
+	handler34 := kessoku.Bind[member.Handler](kessoku.Provide(member.New)).Fn()()
+	handler35 := kessoku.Bind[feed.Handler](kessoku.Provide(feed.New)).Fn()()
+	handler36 := kessoku.Bind[notifications.Handler](kessoku.Provide(notifications.New)).Fn()()
+	handler37 := kessoku.Bind[admin.Handler](kessoku.Provide(admin.New)).Fn()()
+	handler38 := kessoku.Bind[group.Handler](kessoku.Provide(group.New)).Fn()()
+	apihandlers := kessoku.Provide(handler.NewAPIHandlers).Fn()(handler0, handler1, handler2, handler3, handler4, handler5, handler6, handler7, handler8, handler9, handler10, handler11, handler12, handler13, handler14, handler15, handler16, handler17, handler18, handler19, handler20, handler21, handler22, handler23, handler24, handler25, handler26, handler27, handler28, handler29, handler30, handler31, handler32, handler33, handler34, handler35, handler36, handler37, handler38)
+	server0 := kessoku.Provide(server.NewAPIServer).Fn()(config, apihandlers)
 	app := kessoku.Provide(func(srv *http.Server) *App {
 		return &App{HTTPServer: srv}
 	}).Fn()(server0)

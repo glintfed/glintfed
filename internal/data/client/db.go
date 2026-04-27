@@ -3,6 +3,7 @@ package client
 import (
 	"glintfed/ent"
 	"glintfed/internal/data"
+	"glintfed/pkg/cache"
 
 	entsql "entgo.io/ent/dialect/sql"
 	"github.com/XSAM/otelsql"
@@ -49,6 +50,8 @@ func (c *Database) initRedisClient(cfg *data.Config) (err error) {
 		Addr:     cfg.Service.Database.Redis.Addr,
 		Password: cfg.Service.Database.Redis.Password,
 	})
+
+	cache.Register(cache.NewRedisDriver(c.RDB))
 
 	return redisotel.InstrumentTracing(c.RDB)
 }
