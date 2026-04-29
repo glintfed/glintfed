@@ -2,32 +2,49 @@ package client
 
 import (
 	"glintfed/ent"
+	"glintfed/ent/enttest"
 	"glintfed/internal/data"
 	"glintfed/pkg/cache"
+	"testing"
 
 	entsql "entgo.io/ent/dialect/sql"
 	"github.com/XSAM/otelsql"
+	"github.com/go-redis/redismock/v9"
+	_ "github.com/mattn/go-sqlite3"
 	"github.com/redis/go-redis/extra/redisotel/v9"
 	"github.com/redis/go-redis/v9"
 	semconv "go.opentelemetry.io/otel/semconv/v1.40.0"
-	_ "modernc.org/sqlite"
 )
 
 type Database struct {
-	Ent *ent.Client
-	RDB *redis.Client
+	Ent     *ent.Client
+	RDB     *redis.Client
+	RDBMock redismock.ClientMock
 }
 
-func NewDatabase(cfg *data.Config) (database *Database, err error) {
-	database = &Database{}
+func NewDatabase(cfg *data.Config) (db *Database, err error) {
+	db = &Database{}
 
-	if err = database.initSQLClient(cfg); err != nil {
+	if err = db.initSQLClient(cfg); err != nil {
 		return
 	}
 
-	if err = database.initRedisClient(cfg); err != nil {
+	if err = db.initRedisClient(cfg); err != nil {
 		return
 	}
+
+	return
+}
+
+func NewTestDatabase(t *testing.T) (db *Database, err error) {
+	db = &Database{
+		Ent: enttest.Open(t,
+			"sqlite3", "file:ent?mode=memory&_fk=1",
+			enttest.WithOptions(ent.Log(t.Log)),
+		),
+	}
+
+	db.RDB, db.RDBMock = redismock.NewClientMock()
 
 	return
 }

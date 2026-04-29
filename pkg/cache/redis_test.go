@@ -53,6 +53,36 @@ func TestRedisDrv(t *testing.T) {
 		}
 	})
 
+	t.Run("Get encoded value", func(t *testing.T) {
+		want := redisTestValue{Name: "alice"}
+		encoded, err := encodeRedisValue(&want)
+		if err != nil {
+			t.Fatalf("failed to encode value: %v", err)
+		}
+		mock.ExpectGet("profile").SetVal(encoded.(string))
+
+		got := drv.Get(ctx, "profile")
+		if got == nil {
+			t.Fatal("expected cached value, got nil")
+		}
+		if got, ok := got.(*redisTestValue); !ok || *got != want {
+			t.Fatalf("cached value = %#v, want %#v", got, &want)
+		}
+	})
+
+	t.Run("Set encoded value", func(t *testing.T) {
+		val := &redisTestValue{Name: "alice"}
+		encoded, err := encodeRedisValue(val)
+		if err != nil {
+			t.Fatalf("failed to encode value: %v", err)
+		}
+		mock.ExpectSet("profile", encoded, time.Minute).SetVal("OK")
+
+		if err := drv.Set(ctx, "profile", val, time.Minute); err != nil {
+			t.Errorf("unexpected error: %v", err)
+		}
+	})
+
 	t.Run("Del", func(t *testing.T) {
 		mock.ExpectDel("key1").SetVal(1)
 		err := drv.Del(ctx, "key1")
@@ -72,4 +102,8 @@ func TestRedisDrv(t *testing.T) {
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Error(err)
 	}
+}
+
+type redisTestValue struct {
+	Name string
 }

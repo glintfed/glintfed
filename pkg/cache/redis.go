@@ -1,7 +1,9 @@
 package cache
 
 import (
+	"bytes"
 	"context"
+	"encoding/gob"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -32,11 +34,18 @@ func (d *redisDrv) Get(ctx context.Context, key string) any {
 	} else if err != nil {
 		return nil
 	}
+	if decoded, ok := decodeRedisValue(val); ok {
+		return decoded
+	}
 	return val
 }
 
 func (d *redisDrv) Set(ctx context.Context, key string, val any, ttl time.Duration) error {
-	return d.client.Set(ctx, key, val, ttl).Err()
+	encoded, err := encodeRedisValue(val)
+	if err != nil {
+		return err
+	}
+	return d.client.Set(ctx, key, encoded, ttl).Err()
 }
 
 func (d *redisDrv) Del(ctx context.Context, key string) error {
@@ -45,4 +54,28 @@ func (d *redisDrv) Del(ctx context.Context, key string) error {
 
 func (d *redisDrv) Clear(ctx context.Context) error {
 	return d.client.FlushDB(ctx).Err()
+}
+
+func encodeRedisValue(val any) (any, error) {
+	switch val.(type) {
+	case string, []byte:
+		return val, nil
+	}
+
+	if val != nil {
+		gob.Register(val)
+	}
+	var buf bytes.Buffer
+	if err := gob.NewEncoder(&buf).Encode(&val); err != nil {
+		return nil, err
+	}
+	return buf.String(), nil
+}
+
+func decodeRedisValue(text string) (any, bool) {
+	var val any
+	if err := gob.NewDecoder(bytes.NewBufferString(text)).Decode(&val); err != nil {
+		return nil, false
+	}
+	return val, true
 }

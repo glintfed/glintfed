@@ -37,7 +37,11 @@ func main() {
 		os.Exit(1)
 	}
 
-	app := newApp(cfg)
+	app, err := newApp(cfg)
+	if err != nil {
+		slog.Error("failed to init application", liblogs.ErrAttr(err))
+		return
+	}
 	if err := app.Run(context.Background()); err != nil {
 		slog.Error("failed to run application", liblogs.ErrAttr(err))
 		return

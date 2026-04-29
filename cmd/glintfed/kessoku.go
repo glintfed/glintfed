@@ -2,6 +2,9 @@ package main
 
 import (
 	"glintfed/internal/data/client"
+	"glintfed/internal/lib/fositestore"
+	"glintfed/internal/model"
+	oauthrepo "glintfed/internal/repo/oauth"
 	"glintfed/internal/server"
 	"glintfed/internal/server/handler"
 	"glintfed/internal/server/handler/admininvite"
@@ -43,6 +46,9 @@ import (
 	"glintfed/internal/server/handler/stories/storyapiv1"
 	"glintfed/internal/server/handler/story"
 	"glintfed/internal/server/handler/userappsettings"
+	accountsvc "glintfed/internal/service/account"
+	instancesvc "glintfed/internal/service/instance"
+	"glintfed/internal/service/worker"
 	"net/http"
 
 	"github.com/mazrean/kessoku"
@@ -54,6 +60,90 @@ var _ = kessoku.Inject[*App](
 	kessoku.Set(
 		kessoku.Provide(client.NewDatabase),
 		kessoku.Provide(server.NewAPIServer),
+	),
+	kessoku.Set(
+		kessoku.Provide(fositestore.New),
+	),
+	kessoku.Set(
+		kessoku.Provide(model.NewAppRegister),
+		kessoku.Provide(model.NewUser),
+		kessoku.Provide(model.NewInstanceActor),
+		kessoku.Provide(model.NewInstance),
+		kessoku.Provide(model.NewProfile),
+		kessoku.Provide(model.NewStatus),
+		kessoku.Provide(model.NewMedia),
+	),
+	kessoku.Set(
+		kessoku.Bind[instancesvc.InstanceModel](
+			kessoku.Provide(func(m *model.Instance) instancesvc.InstanceModel { return m }),
+		),
+		kessoku.Bind[instancesvc.NodeinfoUserModel](
+			kessoku.Provide(func(m *model.User) instancesvc.NodeinfoUserModel { return m }),
+		),
+		kessoku.Bind[instancesvc.NodeinfoStatusModel](
+			kessoku.Provide(func(m *model.Status) instancesvc.NodeinfoStatusModel { return m }),
+		),
+		kessoku.Provide(instancesvc.NewDomainManager),
+		kessoku.Provide(instancesvc.NewNodeInfo),
+	),
+	kessoku.Set(
+		kessoku.Bind[accountsvc.ProfileModel](
+			kessoku.Provide(func(m *model.Profile) accountsvc.ProfileModel { return m }),
+		),
+		kessoku.Provide(accountsvc.NewProfile),
+	),
+	kessoku.Set(
+		kessoku.Bind[appregister.AppRegisterModel](
+			kessoku.Provide(func(m *model.AppRegister) appregister.AppRegisterModel { return m }),
+		),
+		kessoku.Bind[appregister.UserModel](
+			kessoku.Provide(func(m *model.User) appregister.UserModel { return m }),
+		),
+		kessoku.Provide(oauthrepo.NewRefreshToken),
+		kessoku.Bind[appregister.RefreshTokenRepository](
+			kessoku.Provide(func(r *oauthrepo.RefreshToken) appregister.RefreshTokenRepository { return r }),
+		),
+		kessoku.Bind[appregister.AccountService](
+			kessoku.Provide(func(s *accountsvc.Profile) appregister.AccountService { return s }),
+		),
+	),
+	kessoku.Set(
+		kessoku.Bind[instanceactor.InstanceActorModel](
+			kessoku.Provide(func(m *model.InstanceActor) instanceactor.InstanceActorModel { return m }),
+		),
+	),
+	kessoku.Set(
+		kessoku.Bind[story.ProfileModel](
+			kessoku.Provide(func(m *model.Profile) story.ProfileModel { return m }),
+		),
+	),
+	kessoku.Set(
+		kessoku.Bind[media.MediaModel](
+			kessoku.Provide(func(m *model.Media) media.MediaModel { return m }),
+		),
+	),
+	kessoku.Set(
+		kessoku.Bind[federation.ProfileModel](
+			kessoku.Provide(func(m *model.Profile) federation.ProfileModel { return m }),
+		),
+		kessoku.Bind[federation.StatusModel](
+			kessoku.Provide(func(m *model.Status) federation.StatusModel { return m }),
+		),
+		kessoku.Provide(worker.NewInboxWorker),
+		kessoku.Bind[federation.InboxWorkerService](
+			kessoku.Provide(func(s *worker.InboxWorker) federation.InboxWorkerService { return s }),
+		),
+		kessoku.Bind[federation.InstanceService](
+			kessoku.Provide(func(dm *instancesvc.DomainManager, n *instancesvc.Nodeinfo) federation.InstanceService {
+				return &struct {
+					*instancesvc.DomainManager
+					*instancesvc.Nodeinfo
+				}{
+					DomainManager: dm,
+					Nodeinfo:      n,
+				}
+			}),
+		),
 	),
 	kessoku.Set(
 		kessoku.Bind[admininvite.Handler](kessoku.Provide(admininvite.New)),
