@@ -59,6 +59,7 @@ var _ = kessoku.Inject[*App](
 	"newApp",
 	kessoku.Set(
 		kessoku.Provide(client.NewDatabase),
+		kessoku.Provide(client.NewEvent),
 		kessoku.Provide(server.NewAPIServer),
 	),
 	kessoku.Set(
@@ -193,5 +194,5 @@ var _ = kessoku.Inject[*App](
 		kessoku.Bind[userappsettings.Handler](kessoku.Provide(userappsettings.New)),
 		kessoku.Provide(handler.NewAPIHandlers),
 	),
-	kessoku.Provide(func(srv *http.Server) *App { return &App{HTTPServer: srv} }),
+	kessoku.Provide(func(srv *http.Server, e *client.Event) *App { return &App{HTTPServer: srv, Router: e.Router} }),
 )

@@ -90,16 +90,19 @@ func newApp(config *data.Config) (*App, error) {
 	handler30 := kessoku.Bind[notifications.Handler](kessoku.Provide(notifications.New)).Fn()()
 	handler31 := kessoku.Bind[admin.Handler](kessoku.Provide(admin.New)).Fn()()
 	handler32 := kessoku.Bind[group.Handler](kessoku.Provide(group.New)).Fn()()
-	inboxWorker := kessoku.Provide(worker.NewInboxWorker).Fn()()
 	var err error
-	database, err := kessoku.Provide(client.NewDatabase).Fn()(config)
+	event, err := kessoku.Provide(client.NewEvent).Fn()(config)
 	if err != nil {
 		var zero *App
 		return zero, err
 	}
-	inboxWorkerService := kessoku.Bind[federation.InboxWorkerService](kessoku.Provide(func(s *worker.InboxWorker) federation.InboxWorkerService {
-		return s
-	})).Fn()(inboxWorker)
+	var err0 error
+	database, err0 := kessoku.Provide(client.NewDatabase).Fn()(config)
+	if err0 != nil {
+		var zero *App
+		return zero, err0
+	}
+	inboxWorker := kessoku.Provide(worker.NewInboxWorker).Fn()(event)
 	store := kessoku.Provide(fositestore.New).Fn()(database, config)
 	user := kessoku.Provide(model.NewUser).Fn()(database)
 	profile := kessoku.Provide(model.NewProfile).Fn()(database)
@@ -108,6 +111,9 @@ func newApp(config *data.Config) (*App, error) {
 	media0 := kessoku.Provide(model.NewMedia).Fn()(database)
 	appRegister := kessoku.Provide(model.NewAppRegister).Fn()(database)
 	instance0 := kessoku.Provide(model.NewInstance).Fn()(database)
+	inboxWorkerService := kessoku.Bind[federation.InboxWorkerService](kessoku.Provide(func(s *worker.InboxWorker) federation.InboxWorkerService {
+		return s
+	})).Fn()(inboxWorker)
 	oauth2Provider := kessoku.Provide(fositestore.NewOAuth2Provider).Fn()(store, config)
 	refreshToken := kessoku.Provide(oauth.NewRefreshToken).Fn()(config, store)
 	userModel := kessoku.Bind[oauth0.UserModel](kessoku.Provide(func(m *model.User) oauth0.UserModel {
@@ -169,8 +175,8 @@ func newApp(config *data.Config) (*App, error) {
 	handler38 := kessoku.Bind[federation.Handler](kessoku.Provide(federation.New)).Fn()(config, profileModel, statusModel, instanceService, inboxWorkerService)
 	apihandlers := kessoku.Provide(handler.NewAPIHandlers).Fn()(handler0, handler33, handler38, handler35, handler34, handler36, handler37, handler1, handler2, handler3, handler4, handler5, handler6, handler7, handler8, handler9, handler10, handler11, handler12, handler13, handler14, handler15, handler16, handler17, handler18, handler19, handler20, handler21, handler22, handler23, handler24, handler25, handler26, handler27, handler28, handler29, handler30, handler31, handler32)
 	server0 := kessoku.Provide(server.NewAPIServer).Fn()(config, apihandlers)
-	app := kessoku.Provide(func(srv *http.Server) *App {
-		return &App{HTTPServer: srv}
-	}).Fn()(server0)
+	app := kessoku.Provide(func(srv *http.Server, e *client.Event) *App {
+		return &App{HTTPServer: srv, Router: e.Router}
+	}).Fn()(server0, event)
 	return app, nil
 }
