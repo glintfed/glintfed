@@ -9,11 +9,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/ThreeDotsLabs/watermill/message"
 	"golang.org/x/sync/errgroup"
 )
 
 type App struct {
 	HTTPServer *http.Server
+	Router     *message.Router
 }
 
 func (app *App) Run(ctx context.Context) error {
@@ -21,6 +23,11 @@ func (app *App) Run(ctx context.Context) error {
 	defer stop()
 
 	g, ctx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		slog.Info("starting watermill router")
+		return app.Router.Run(ctx)
+	})
 
 	g.Go(func() error {
 		slog.Info("starting http server", slog.String("addr", app.HTTPServer.Addr))
