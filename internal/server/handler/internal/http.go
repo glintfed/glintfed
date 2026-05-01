@@ -26,6 +26,12 @@ func WriteJSONWithCORS(w http.ResponseWriter, status int, v any) {
 }
 
 func WriteError(w http.ResponseWriter, err error) {
+	var validationErr *ValidationError
+	if errors.As(err, &validationErr) {
+		WriteJSON(w, http.StatusBadRequest, validationErr)
+		return
+	}
+
 	if errors.Is(err, liberrs.Todo) {
 		http.Error(w, http.StatusText(http.StatusNotImplemented), http.StatusNotImplemented)
 		return

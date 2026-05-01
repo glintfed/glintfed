@@ -109,7 +109,7 @@ func (h *handler) VerifyCode(w http.ResponseWriter, r *http.Request) {
 	req.Email = strings.ToLower(req.Email)
 
 	if err := h.v.Struct(req); err != nil {
-		internal.WriteJSON(w, http.StatusUnprocessableEntity, ErrorResponse{Status: "error", Message: "Invalid request."})
+		internal.WriteError(w, internal.NewValidationError("validator", err))
 		return
 	}
 
@@ -142,15 +142,15 @@ func (h *handler) Onboarding(w http.ResponseWriter, r *http.Request) {
 	req.Email = strings.ToLower(req.Email)
 
 	if err := h.v.Struct(req); err != nil {
-		internal.WriteJSON(w, http.StatusUnprocessableEntity, ErrorResponse{Status: "error", Message: "Invalid request."})
+		internal.WriteError(w, internal.NewValidationError("validator", err))
 		return
 	}
 	if err := h.v.Var(req.Name, fmt.Sprintf("omitempty,max=%d", h.cfg.App.MaxNameLength)); err != nil {
-		internal.WriteJSON(w, http.StatusUnprocessableEntity, ErrorResponse{Status: "error", Message: "Invalid request."})
+		internal.WriteError(w, internal.NewValidationError("validator", err))
 		return
 	}
 	if err := h.v.Var(req.Password, fmt.Sprintf("required,min=%d", h.cfg.App.MinPasswordLength)); err != nil {
-		internal.WriteJSON(w, http.StatusUnprocessableEntity, ErrorResponse{Status: "error", Message: "Invalid request."})
+		internal.WriteError(w, internal.NewValidationError("validator", err))
 		return
 	}
 
@@ -161,10 +161,7 @@ func (h *handler) Onboarding(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !exists {
-		internal.WriteJSON(w, http.StatusBadRequest, ErrorResponse{
-			Status:  "error",
-			Message: "Invalid verification code, please try again later.",
-		})
+		internal.WriteError(w, internal.NewValidationError("invalid verification code"))
 		return
 	}
 
@@ -240,14 +237,14 @@ func (h *handler) registrationEnabled(w http.ResponseWriter, r *http.Request) bo
 func (h *handler) decode(w http.ResponseWriter, r *http.Request, dst any) bool {
 	if strings.Contains(r.Header.Get("Content-Type"), "application/json") {
 		if err := json.NewDecoder(r.Body).Decode(dst); err != nil {
-			internal.WriteJSON(w, http.StatusBadRequest, ErrorResponse{Status: "error", Message: "Invalid request."})
+			internal.WriteError(w, internal.NewValidationError("invalid request"))
 			return false
 		}
 		return true
 	}
 
 	if err := r.ParseForm(); err != nil {
-		internal.WriteJSON(w, http.StatusBadRequest, ErrorResponse{Status: "error", Message: "Invalid request."})
+		internal.WriteError(w, internal.NewValidationError("invalid request"))
 		return false
 	}
 

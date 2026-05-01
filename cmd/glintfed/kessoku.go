@@ -63,6 +63,7 @@ var _ = kessoku.Inject[*App](
 	),
 	kessoku.Set(
 		kessoku.Provide(fositestore.New),
+		kessoku.Provide(fositestore.NewOAuth2Provider),
 	),
 	kessoku.Set(
 		kessoku.Provide(model.NewAppRegister),
@@ -143,6 +144,11 @@ var _ = kessoku.Inject[*App](
 					Nodeinfo:      n,
 				}
 			}),
+		),
+	),
+	kessoku.Set(
+		kessoku.Bind[oauth.UserModel](
+			kessoku.Provide(func(m *model.User) oauth.UserModel { return m }),
 		),
 	),
 	kessoku.Set(

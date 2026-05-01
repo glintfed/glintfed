@@ -41,8 +41,3 @@ type OnboardingUser struct {
 type AccountResponse struct {
 	*account.ProfileResult
 }
-
-type ErrorResponse struct {
-	Status  string `json:"status"`
-	Message string `json:"message,omitempty"`
-}

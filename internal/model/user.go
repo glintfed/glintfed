@@ -2,6 +2,7 @@ package model
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"glintfed/ent"
@@ -73,4 +74,29 @@ func (m *User) CountActiveSince(ctx context.Context, since time.Time) (int, erro
 			user.LastActiveAtGT(since),
 		)).
 		Count(ctx)
+}
+
+// ErrInvalidCredentials is returned when username/password verification fails.
+var ErrInvalidCredentials = errors.New("invalid username or password")
+
+// Authenticate
+//
+//	SELECT * FROM users WHERE (username = ? OR email = ?) LIMIT 1
+func (m *User) Authenticate(ctx context.Context, username, password string) (*ent.User, error) {
+	u, err := m.UserClient.Query().
+		Where(user.Or(
+			user.Username(username),
+			user.Email(username),
+		)).
+		First(ctx)
+	if ent.IsNotFound(err) {
+		return nil, ErrInvalidCredentials
+	}
+	if err != nil {
+		return nil, err
+	}
+	if err := bcrypt.CompareHashAndPassword([]byte(u.Password), []byte(password)); err != nil {
+		return nil, ErrInvalidCredentials
+	}
+	return u, nil
 }

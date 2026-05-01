@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"glintfed/internal/data"
+	handlerinternal "glintfed/internal/server/handler/internal"
 )
 
 func TestVerifyCode(t *testing.T) {
@@ -76,6 +77,41 @@ func TestVerifyCodeDisabledRegistration(t *testing.T) {
 	}
 }
 
+func TestVerifyCodeValidationError(t *testing.T) {
+	appRegisterModel := &AppRegisterModelMock{}
+	h := New(
+		appRegisterTestConfig(t),
+		appRegisterModel,
+		&UserModelMock{},
+		&RefreshTokenRepositoryMock{},
+		&AccountServiceMock{},
+	)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/auth/app-code-verify", strings.NewReader(`{"email":"invalid","verify_code":"123456"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+
+	h.VerifyCode(rec, req)
+
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", rec.Code, http.StatusBadRequest)
+	}
+
+	var res handlerinternal.ValidationError
+	if err := json.NewDecoder(rec.Body).Decode(&res); err != nil {
+		t.Fatalf("decode response: %v", err)
+	}
+	if res.Status != "error" {
+		t.Fatalf("status response = %q, want error", res.Status)
+	}
+	if res.Message != "validator: The email field must be a valid email address." {
+		t.Fatalf("message response = %q, want email validation message", res.Message)
+	}
+	if calls := appRegisterModel.VerifyCodeExistsCalls(); len(calls) != 0 {
+		t.Fatalf("VerifyCodeExists calls = %d, want 0", len(calls))
+	}
+}
+
 func TestOnboardingInvalidVerificationCode(t *testing.T) {
 	appRegisterModel := &AppRegisterModelMock{
 		VerifyCodeExistsFunc: func(ctx context.Context, email string, code string) (bool, error) {
@@ -107,12 +143,15 @@ func TestOnboardingInvalidVerificationCode(t *testing.T) {
 		t.Fatalf("status = %d, want %d", rec.Code, http.StatusBadRequest)
 	}
 
-	var res ErrorResponse
+	var res handlerinternal.ValidationError
 	if err := json.NewDecoder(rec.Body).Decode(&res); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
 	if res.Status != "error" {
 		t.Fatalf("status response = %q, want error", res.Status)
+	}
+	if res.Message != "invalid verification code" {
+		t.Fatalf("message response = %q, want invalid verification code", res.Message)
 	}
 	if calls := appRegisterModel.VerifyCodeExistsCalls(); len(calls) != 1 {
 		t.Fatalf("VerifyCodeExists calls = %d, want 1", len(calls))
